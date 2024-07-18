@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  flask_app:
+    build: .
+    ports:
+      - "8010:5000"
+    env_file:
+      - .env

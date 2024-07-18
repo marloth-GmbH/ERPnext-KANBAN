@@ -1,9 +1,9 @@
 import os
 import requests
+from flask import Flask, request, send_file, render_template_string
 from reportlab.lib.pagesizes import A6, landscape
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
-from reportlab.lib import colors
 import qrcode
 from PIL import Image
 from io import BytesIO
@@ -22,6 +22,8 @@ load_dotenv()
 ERP_URL = os.getenv("ERP_URL")
 API_KEY = os.getenv("API_KEY")
 API_SECRET = os.getenv("API_SECRET")
+
+app = Flask(__name__)
 
 def get_item_details(item_code):
     url = f"{ERP_URL}/api/resource/Item/{item_code}"
@@ -117,7 +119,6 @@ def create_kanban_card_front(pdf_canvas, card_title, image, item_code, orderpage
     # Draw card title
     draw_text_center(pdf_canvas, card_title, 2 * mm, 83 * mm, 70 * mm, 20 * mm)
 
-
     # Draw item code
     pdf_canvas.setFont("Helvetica", 12)
     pdf_canvas.drawString(x + 4 * mm, y + card_height - 26 * mm, f"Item Code: {item_code}")
@@ -125,7 +126,6 @@ def create_kanban_card_front(pdf_canvas, card_title, image, item_code, orderpage
     # Draw Image
     image_reader = ImageReader(image)
     pdf_canvas.drawImage(image_reader, 7 * mm, 12 * mm, 60 * mm, 60 * mm)
-
 
     # Draw supplier text
     draw_text_left(pdf_canvas, f"Lieferant: {default_supplier}", 76 * mm, 90 * mm, 70 * mm, 12 * mm)
@@ -144,7 +144,6 @@ def create_kanban_card_front(pdf_canvas, card_title, image, item_code, orderpage
 
     # Draw date and quantity label
     draw_text_left(pdf_canvas, "Datum   -   Stk.", 76 * mm, 50 * mm, 70 * mm, 12 * mm)
-
 
      # Draw QR Code for order page or orderpage_link text
     if orderpage_link.startswith("http"):
@@ -215,15 +214,25 @@ def generate_kanban_pdf(item_codes):
                 c.showPage()  # Go to the next page
 
     c.save()
+    return filename
 
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "POST":
+        item_codes_input = request.form["item_codes"]
+        item_codes = item_codes_input.split(',')
+        item_codes = [code.strip() for code in item_codes]  # Remove any surrounding whitespace
+        pdf_filename = generate_kanban_pdf(item_codes)
+        return send_file(pdf_filename, as_attachment=True)
 
-def main():
-    #item_codes_input = "PRT-23-00388,PRT-22-00405,PRT-22-00201,PRT-22-00418,PRT-22-00429,PRT-22-00367" 
-    item_codes_input = input("Bitte geben Sie eine Teilenummer oder eine kommagetrennte Liste von Teilenummern ein: ")
-    item_codes = item_codes_input.split(',')
-    item_codes = [code.strip() for code in item_codes]  # Remove any surrounding whitespace
-    generate_kanban_pdf(item_codes)
+    html = """
+    <form method="post">
+        <label for="item_codes">Teilenummern (kommagetrennt):</label>
+        <input type="text" id="item_codes" name="item_codes">
+        <input type="submit" value="Generate KANBAN PDF">
+    </form>
+    """
+    return render_template_string(html)
 
 if __name__ == "__main__":
-    main()
-    input("Press Enter to exit...")
+    app.run(debug=True, host='0.0.0.0')
