@@ -105,7 +105,7 @@ def draw_dotted_line(pdf_canvas, x, y, height):
     pdf_canvas.line(x, y, x, y + height)
     pdf_canvas.setDash()  # Reset dash pattern to solid line
 
-def create_kanban_card_front(pdf_canvas, card_title, image, item_code, orderpage_link, default_supplier, x, y):
+def create_kanban_card_front(pdf_canvas, card_title, image, item_code, orderpage_link, default_supplier, supplier_part_no, x, y):
     card_width, card_height = landscape(A6)
 
     card_title = card_title[:34] + ".." if len(card_title) > 34 else card_title
@@ -128,11 +128,25 @@ def create_kanban_card_front(pdf_canvas, card_title, image, item_code, orderpage
     image_reader = ImageReader(image)
     pdf_canvas.drawImage(image_reader, 7 * mm, 15 * mm, 60 * mm, 60 * mm)
 
+
+    # Draw supplier text
+    draw_text_left(pdf_canvas, f"Lieferant: {default_supplier}", 76 * mm, 90 * mm, 70 * mm, 12 * mm)
+
+    # Draw supplier part number
+    draw_text_left(pdf_canvas, f"L-Teilenummer: {supplier_part_no}", 76 * mm, 80 * mm, 70 * mm, 12 * mm)
+
+    # Draw last price label
+    draw_text_left(pdf_canvas, "Letzer Preis:", 76 * mm, 70 * mm, 70 * mm, 12 * mm)
+
+    # Draw date and quantity label
+    draw_text_left(pdf_canvas, "Datum   -   Stk.", 76 * mm, 60 * mm, 70 * mm, 12 * mm)
+
+
      # Draw QR Code for order page
     qr_size = 300  # Use higher resolution size
     qr_img = create_qr_code(orderpage_link, qr_size)
     qr_reader = ImageReader(qr_img)
-    pdf_canvas.drawImage(qr_reader, x + card_width - 35 * mm, y + card_height - 40 * mm, 30 * mm, 30 * mm)
+    pdf_canvas.drawImage(qr_reader, (74 + 37 - 18) * mm, y + 6 * mm, 30 * mm, 30 * mm)
 
     # Draw QR Code for item_code
     qr_small_size = 150  # Use higher resolution size
@@ -145,9 +159,11 @@ def process_item(item_code):
     title = item_details["item_name"]
     image_url = item_details.get("image", "./default.png")
     orderpage_link = item_details.get("orderpage_link", "")
-    default_supplier = "Unknown Supplier"
+    supplier = "Unknown Supplier"
+    supplier_part_no = "Unknown Part No"
     if item_details.get("supplier_items"):
-        default_supplier = item_details["supplier_items"][0]["supplier"]
+        supplier = item_details["supplier_items"][0]["supplier"]
+        supplier_part_no = item_details["supplier_items"][0]["supplier_part_no"]
     
     if image_url.startswith("/"):
         image_url = ERP_URL + image_url
@@ -159,7 +175,8 @@ def process_item(item_code):
         "image": image,
         "item_code": item_code,
         "orderpage_link": orderpage_link,
-        "default_supplier": default_supplier
+        "supplier": supplier,
+        "supplier_part_no": supplier_part_no
     }
 
 def generate_kanban_pdf(item_codes):
@@ -179,7 +196,8 @@ def generate_kanban_pdf(item_codes):
                 item_data["image"], 
                 item_data["item_code"], 
                 item_data["orderpage_link"], 
-                item_data["default_supplier"], 
+                item_data["supplier"], 
+                item_data["supplier_part_no"],  # Pass supplier part number
                 0 * mm, 0 * mm
             )
             c.showPage()  # Go to the next page
