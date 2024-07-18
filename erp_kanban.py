@@ -115,38 +115,45 @@ def create_kanban_card_front(pdf_canvas, card_title, image, item_code, orderpage
     draw_dotted_line(pdf_canvas, line_x, y, card_height)
 
     # Draw card title
-    draw_text_center(pdf_canvas, card_title, 2 * mm, 85 * mm, 70 * mm, 20 * mm)
+    draw_text_center(pdf_canvas, card_title, 2 * mm, 83 * mm, 70 * mm, 20 * mm)
 
-    # Draw supplier text
-    draw_text_left(pdf_canvas, f"Nachbestellen bei: {default_supplier}", 76 * mm, 95 * mm, 70 * mm, 10 * mm)
 
     # Draw item code
     pdf_canvas.setFont("Helvetica", 12)
-    pdf_canvas.drawString(x + 4 * mm, y + card_height - 23 * mm, f"Item Code: {item_code}")
+    pdf_canvas.drawString(x + 4 * mm, y + card_height - 26 * mm, f"Item Code: {item_code}")
 
     # Draw Image
     image_reader = ImageReader(image)
-    pdf_canvas.drawImage(image_reader, 7 * mm, 15 * mm, 60 * mm, 60 * mm)
+    pdf_canvas.drawImage(image_reader, 7 * mm, 12 * mm, 60 * mm, 60 * mm)
 
 
     # Draw supplier text
     draw_text_left(pdf_canvas, f"Lieferant: {default_supplier}", 76 * mm, 90 * mm, 70 * mm, 12 * mm)
 
     # Draw supplier part number
-    draw_text_left(pdf_canvas, f"L-Teilenummer: {supplier_part_no}", 76 * mm, 80 * mm, 70 * mm, 12 * mm)
+    draw_text_left(pdf_canvas, f"L-Teilenummer: {supplier_part_no}", 76 * mm, 82 * mm, 70 * mm, 12 * mm)
 
     # Draw last price label
-    draw_text_left(pdf_canvas, "Letzer Preis:", 76 * mm, 70 * mm, 70 * mm, 12 * mm)
+    draw_text_left(pdf_canvas, "Bestellmenge:", 76 * mm, 74 * mm, 70 * mm, 12 * mm)
 
     # Draw date and quantity label
-    draw_text_left(pdf_canvas, "Datum   -   Stk.", 76 * mm, 60 * mm, 70 * mm, 12 * mm)
+    draw_text_left(pdf_canvas, "Kanban VE:", 76 * mm, 66 * mm, 70 * mm, 12 * mm)
+
+    # Draw date and quantity label
+    draw_text_left(pdf_canvas, "Letzer Preis:", 76 * mm, 58 * mm, 70 * mm, 12 * mm)
+
+    # Draw date and quantity label
+    draw_text_left(pdf_canvas, "Datum   -   Stk.", 76 * mm, 50 * mm, 70 * mm, 12 * mm)
 
 
-     # Draw QR Code for order page
-    qr_size = 300  # Use higher resolution size
-    qr_img = create_qr_code(orderpage_link, qr_size)
-    qr_reader = ImageReader(qr_img)
-    pdf_canvas.drawImage(qr_reader, (74 + 37 - 18) * mm, y + 6 * mm, 30 * mm, 30 * mm)
+     # Draw QR Code for order page or orderpage_link text
+    if orderpage_link.startswith("http"):
+        qr_size = 300  # Use higher resolution size
+        qr_img = create_qr_code(orderpage_link, qr_size)
+        qr_reader = ImageReader(qr_img)
+        pdf_canvas.drawImage(qr_reader, (74 + 37 - 18) * mm, y + 6 * mm, 30 * mm, 30 * mm)
+    else:
+        draw_text_left(pdf_canvas, orderpage_link, 76 * mm, 25 * mm, 70 * mm, 12 * mm)
 
     # Draw QR Code for item_code
     qr_small_size = 150  # Use higher resolution size
@@ -155,29 +162,33 @@ def create_kanban_card_front(pdf_canvas, card_title, image, item_code, orderpage
     pdf_canvas.drawImage(qr_small_reader, x + 2 * mm, y + 2 * mm, 15 * mm, 15 * mm)
 
 def process_item(item_code):
-    item_details = get_item_details(item_code)
-    title = item_details["item_name"]
-    image_url = item_details.get("image", "./default.png")
-    orderpage_link = item_details.get("orderpage_link", "")
-    supplier = "Unknown Supplier"
-    supplier_part_no = "Unknown Part No"
-    if item_details.get("supplier_items"):
-        supplier = item_details["supplier_items"][0]["supplier"]
-        supplier_part_no = item_details["supplier_items"][0]["supplier_part_no"]
-    
-    if image_url.startswith("/"):
-        image_url = ERP_URL + image_url
+    try:
+        item_details = get_item_details(item_code)
+        title = item_details["item_name"]
+        image_url = item_details.get("image", "./default.png")
+        orderpage_link = item_details.get("orderpage_link", "")
+        supplier = "Unknown Supplier"
+        supplier_part_no = "Unknown Part No"
+        if item_details.get("supplier_items"):
+            supplier = item_details["supplier_items"][0]["supplier"]
+            supplier_part_no = item_details["supplier_items"][0]["supplier_part_no"]
 
-    image = download_image(image_url)
+        if image_url.startswith("/"):
+            image_url = ERP_URL + image_url
 
-    return {
-        "title": title,
-        "image": image,
-        "item_code": item_code,
-        "orderpage_link": orderpage_link,
-        "supplier": supplier,
-        "supplier_part_no": supplier_part_no
-    }
+        image = download_image(image_url)
+
+        return {
+            "title": title,
+            "image": image,
+            "item_code": item_code,
+            "orderpage_link": orderpage_link,
+            "supplier": supplier,
+            "supplier_part_no": supplier_part_no
+        }
+    except Exception as e:
+        print(f"Fehler bei der Verarbeitung von Artikelnummer {item_code}: {e}")
+        return None
 
 def generate_kanban_pdf(item_codes):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -190,19 +201,21 @@ def generate_kanban_pdf(item_codes):
         future_to_item = {executor.submit(process_item, item_code): item_code for item_code in item_codes}
         for future in as_completed(future_to_item):
             item_data = future.result()
-            create_kanban_card_front(
-                c, 
-                item_data["title"], 
-                item_data["image"], 
-                item_data["item_code"], 
-                item_data["orderpage_link"], 
-                item_data["supplier"], 
-                item_data["supplier_part_no"],  # Pass supplier part number
-                0 * mm, 0 * mm
-            )
-            c.showPage()  # Go to the next page
+            if item_data:
+                create_kanban_card_front(
+                    c, 
+                    item_data["title"], 
+                    item_data["image"], 
+                    item_data["item_code"], 
+                    item_data["orderpage_link"], 
+                    item_data["supplier"], 
+                    item_data["supplier_part_no"],  # Pass supplier part number
+                    0 * mm, 0 * mm
+                )
+                c.showPage()  # Go to the next page
 
     c.save()
+
 
 def main():
     #item_codes_input = "PRT-23-00388,PRT-22-00405,PRT-22-00201,PRT-22-00418,PRT-22-00429,PRT-22-00367" 
