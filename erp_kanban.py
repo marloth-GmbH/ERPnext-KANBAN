@@ -205,7 +205,8 @@ def generate_kanban_pdf(item_codes):
     c.save()
 
 def main():
-    item_codes_input = "PRT-23-00388,PRT-22-00405,PRT-22-00201,PRT-22-00418,PRT-22-00429,PRT-22-00367"
+    #item_codes_input = "PRT-23-00388,PRT-22-00405,PRT-22-00201,PRT-22-00418,PRT-22-00429,PRT-22-00367" 
+    item_codes_input = input("Bitte geben Sie eine Teilenummer oder eine kommagetrennte Liste von Teilenummern ein: ")
     item_codes = item_codes_input.split(',')
     item_codes = [code.strip() for code in item_codes]  # Remove any surrounding whitespace
     generate_kanban_pdf(item_codes)
