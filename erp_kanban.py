@@ -151,7 +151,7 @@ def create_kanban_card_front(pdf_canvas, card_title, image, item_code, orderpage
         qr_size = 300  # Use higher resolution size
         qr_img = create_qr_code(orderpage_link, qr_size)
         qr_reader = ImageReader(qr_img)
-        pdf_canvas.drawImage(qr_reader, (74 + 37 - 18) * mm, y + 6 * mm, 30 * mm, 30 * mm)
+        pdf_canvas.drawImage(qr_reader, (74 + 37 - 15) * mm, y + 6 * mm, 30 * mm, 30 * mm)
     else:
         draw_text_left(pdf_canvas, orderpage_link, 76 * mm, 25 * mm, 70 * mm, 12 * mm)
 
