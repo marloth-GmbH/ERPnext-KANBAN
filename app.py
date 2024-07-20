@@ -1,6 +1,6 @@
 import os
 import requests
-from flask import Flask, request, send_file, render_template_string
+from flask import Flask, request, send_file, render_template
 from reportlab.lib.pagesizes import A6, landscape
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
@@ -209,23 +209,17 @@ def generate_kanban_pdf(item_codes):
     c.save()
     return filename
 
-@app.route("/", methods=["GET", "POST"])
+@app.route('/')
 def index():
-    if request.method == "POST":
-        item_codes_input = request.form["item_codes"]
-        item_codes = item_codes_input.split(',')
-        item_codes = [code.strip() for code in item_codes]  # Remove any surrounding whitespace
-        pdf_filename = generate_kanban_pdf(item_codes)
-        return send_file(pdf_filename, as_attachment=True)
+    return render_template('index.html')
 
-    html = """
-    <form method="post">
-        <label for="item_codes">Teilenummern (kommagetrennt):</label>
-        <input type="text" id="item_codes" name="item_codes">
-        <input type="submit" value="Generate KANBAN PDF">
-    </form>
-    """
-    return render_template_string(html)
+@app.route("/create_kanban_cards", methods=["POST"])
+def print_labels():
+    item_codes_input = request.form["item_codes"]
+    item_codes = item_codes_input.replace("\n", ",").split(',')
+    item_codes = [code.strip() for code in item_codes if code.strip()]  # Remove any surrounding whitespace and empty codes
+    pdf_filename = generate_kanban_pdf(item_codes)
+    return send_file(pdf_filename, as_attachment=True, download_name='kanban_cards.pdf')
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0')

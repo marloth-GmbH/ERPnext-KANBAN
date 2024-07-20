@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KANBAN-Karten erstellen</title>
+</head>
+<body>
+    <h1>KANBAN-Karten erstellen</h1>
+    <form id="labelForm" method="post" action="/create_kanban_cards">
+        <label for="item_codes">Enter item codes (comma-separated or newline-separated):</label>
+        <br>
+        <textarea id="item_codes" name="item_codes" rows="10" cols="50"></textarea>
+        <br>
+        <button type="submit">Karten erstellen</button>
+    </form>
+    <div id="result"></div>
+</body>
+</html>
