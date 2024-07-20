@@ -63,113 +63,38 @@ def download_image(image_url):
     except requests.exceptions.RequestException:
         return Image.open("./default.png")  # Return a default image if the image_url is not valid
 
-def draw_h1_center(pdf_canvas, text, x, y, width, height):
+def draw_text(pdf_canvas, text, x, y, width, height, alignment, font_name, font_size):
     styles = getSampleStyleSheet()
     style = styles["Normal"]
-    style.alignment = TA_CENTER
-    style.fontName = 'Helvetica-Bold'  # Set font to bold
-    style.fontSize = 24 # Starting font size
+    style.alignment = alignment
+    style.fontName = font_name
+    style.fontSize = font_size  # Starting font size
     style.leading = style.fontSize + 2  # Add extra space between lines
-
-    # Convert width and height to points (1 mm = 2.83465 points)
-    available_width = width
-    available_height = height
-
 
     # Create a paragraph and try to fit it in the available space
     while True:
         p = Paragraph(text, style)
-        width_needed, height_needed = p.wrap(available_width, available_height)
-    
+        width_needed, height_needed = p.wrap(width, height)
         
-        if height_needed <= available_height or style.fontSize <= 4:
+        if height_needed <= height or style.fontSize <= 4:
             break
         
         # Reduce font size and try again
         style.fontSize -= 1
         style.leading = style.fontSize + 2  # Adjust leading accordingly
 
-    # Check if the paragraph fits in the available space after adjusting font size
-    
-
-    p = Paragraph(text, style)
-    width_needed, height_needed = p.wrap(available_width, available_height)
-
     # Draw the frame with a visible boundary for debugging
-    frame = Frame(x, y, available_width, available_height, showBoundary=1, leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
+    frame = Frame(x, y, width, height, showBoundary=0, leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
     frame.addFromList([p], pdf_canvas)
+
+def draw_h1_center(pdf_canvas, text, x, y, width, height):
+    draw_text(pdf_canvas, text, x, y, width, height, TA_CENTER, 'Helvetica-Bold', 24)
 
 def draw_text_left(pdf_canvas, text, x, y, width, height):
-    styles = getSampleStyleSheet()
-    style = styles["Normal"]
-    style.alignment = TA_LEFT
-    style.fontName = 'Helvetica'
-    style.fontSize = 12  # Starting font size
-    style.leading = style.fontSize + 2  # Add extra space between lines
-
-    # Convert width and height to points (1 mm = 2.83465 points)
-    available_width = width
-    available_height = height
-
-
-    # Create a paragraph and try to fit it in the available space
-    while True:
-        p = Paragraph(text, style)
-        width_needed, height_needed = p.wrap(available_width, available_height)
-    
-        
-        if height_needed <= available_height or style.fontSize <= 4:
-            break
-        
-        # Reduce font size and try again
-        style.fontSize -= 1
-        style.leading = style.fontSize + 2  # Adjust leading accordingly
-
-    # Check if the paragraph fits in the available space after adjusting font size
-    
-
-    p = Paragraph(text, style)
-    width_needed, height_needed = p.wrap(available_width, available_height)
-
-    # Draw the frame with a visible boundary for debugging
-    frame = Frame(x, y, available_width, available_height, showBoundary=1, leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
-    frame.addFromList([p], pdf_canvas)
+    draw_text(pdf_canvas, text, x, y, width, height, TA_LEFT, 'Helvetica', 12)
 
 def draw_text_center(pdf_canvas, text, x, y, width, height):
-    styles = getSampleStyleSheet()
-    style = styles["Normal"]
-    style.alignment = TA_CENTER
-    style.fontName = 'Helvetica'
-    style.fontSize = 20  # Starting font size
-    style.leading = style.fontSize + 2  # Add extra space between lines
-
-    # Convert width and height to points (1 mm = 2.83465 points)
-    available_width = width
-    available_height = height
-
-
-    # Create a paragraph and try to fit it in the available space
-    while True:
-        p = Paragraph(text, style)
-        width_needed, height_needed = p.wrap(available_width, available_height)
-    
-        
-        if height_needed <= available_height or style.fontSize <= 4:
-            break
-        
-        # Reduce font size and try again
-        style.fontSize -= 1
-        style.leading = style.fontSize + 2  # Adjust leading accordingly
-
-    # Check if the paragraph fits in the available space after adjusting font size
-    
-
-    p = Paragraph(text, style)
-    width_needed, height_needed = p.wrap(available_width, available_height)
-
-    # Draw the frame with a visible boundary for debugging
-    frame = Frame(x, y, available_width, available_height, showBoundary=1, leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
-    frame.addFromList([p], pdf_canvas)
+    draw_text(pdf_canvas, text, x, y, width, height, TA_CENTER, 'Helvetica', 18)
 
 def create_kanban_card_front(pdf_canvas, card_title, image, item_code, orderpage_link, default_supplier, supplier_part_no, x, y):
     card_width, card_height = landscape(A6)
