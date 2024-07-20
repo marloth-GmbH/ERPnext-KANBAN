@@ -1,24 +1,23 @@
-# Verwende ein offizielles Python-Image als Basis
+# Use the official Python image from the Docker Hub
 FROM python:3.9-slim
 
-# Setze das Arbeitsverzeichnis im Container
-WORKDIR /app
+# Set the working directory in the container
+WORKDIR /workspace
 
-# Kopiere die Anforderungen-Datei in das Arbeitsverzeichnis
-COPY requirements.txt requirements.txt
+# Copy the requirements file into the container
+COPY requirements.txt .
 
-# Installiere die Abhängigkeiten
+# Install the required packages
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Kopiere den Rest des Anwendungscodes in das Arbeitsverzeichnis
+# Copy the rest of the working directory contents into the container
 COPY . .
 
-# Setze Umgebungsvariablen für Flask
-ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
 
-# Exponiere den Port, auf dem Flask läuft
+# Expose the port the app runs on
 EXPOSE 5000
 
-# Führe die Anwendung aus
-CMD ["flask", "run"]
+# Run the application
+CMD ["python", "app.py"]

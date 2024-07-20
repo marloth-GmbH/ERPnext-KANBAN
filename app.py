@@ -8,12 +8,17 @@ import qrcode
 from PIL import Image
 from io import BytesIO
 from datetime import datetime
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import Paragraph, Frame
 from reportlab.lib.enums import TA_LEFT, TA_CENTER
 from reportlab.lib.utils import ImageReader
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import logging
+
+
+# Setup logging for debugging
+logging.basicConfig(level=logging.DEBUG)
 
 # Load environment variables from a .env file
 load_dotenv()
@@ -63,20 +68,35 @@ def draw_text_center(pdf_canvas, text, x, y, width, height):
     style = styles["Normal"]
     style.alignment = TA_CENTER
     style.fontName = 'Helvetica-Bold'  # Set font to bold
-    style.fontSize = 18  # Starting font size
+    style.fontSize = 24 # Starting font size
     style.leading = style.fontSize + 2  # Add extra space between lines
 
-    p = Paragraph(text, style)
-    available_width, available_height = width, height
+    # Convert width and height to points (1 mm = 2.83465 points)
+    available_width = width
+    available_height = height
 
+
+    # Create a paragraph and try to fit it in the available space
     while True:
         p = Paragraph(text, style)
         width_needed, height_needed = p.wrap(available_width, available_height)
+    
+        
         if height_needed <= available_height or style.fontSize <= 4:
             break
+        
+        # Reduce font size and try again
         style.fontSize -= 1
+        style.leading = style.fontSize + 2  # Adjust leading accordingly
 
-    frame = Frame(x, y, width, height, showBoundary=0)
+    # Check if the paragraph fits in the available space after adjusting font size
+    
+
+    p = Paragraph(text, style)
+    width_needed, height_needed = p.wrap(available_width, available_height)
+
+    # Draw the frame with a visible boundary for debugging
+    frame = Frame(x, y, available_width, available_height, showBoundary=0, leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
     frame.addFromList([p], pdf_canvas)
 
 def draw_text_left(pdf_canvas, text, x, y, width, height):
@@ -97,24 +117,18 @@ def draw_text_left(pdf_canvas, text, x, y, width, height):
             break
         style.fontSize -= 1
 
-    frame = Frame(x, y, width, height, showBoundary=0)
+    frame = Frame(x, y, width, height, showBoundary=1, leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
     frame.addFromList([p], pdf_canvas)
 
-def draw_dotted_line(pdf_canvas, x, y, height):
-    pdf_canvas.setStrokeColorRGB(0.8, 0.8, 0.8)  # Set grey color
-    pdf_canvas.setLineWidth(1)
-    pdf_canvas.setDash(1, 2)  # Set the pattern for the dotted line
-    pdf_canvas.line(x, y, x, y + height)
-    pdf_canvas.setDash()  # Reset dash pattern to solid line
 
 def create_kanban_card_front(pdf_canvas, card_title, image, item_code, orderpage_link, default_supplier, supplier_part_no, x, y):
     card_width, card_height = landscape(A6)
 
-    card_title = card_title[:34] + ".." if len(card_title) > 34 else card_title
-
-    # Draw dotted line
+    # Draw center line
+    pdf_canvas.setStrokeColorRGB(0.8, 0.8, 0.8)  # Set grey color
+    pdf_canvas.setLineWidth(1)
     line_x = x + (card_width) / 2  # Center of the card
-    draw_dotted_line(pdf_canvas, line_x, y, card_height)
+    pdf_canvas.line(line_x, y, line_x, y + card_height)
 
     # Draw card title
     draw_text_center(pdf_canvas, card_title, 2 * mm, 83 * mm, 70 * mm, 20 * mm)
